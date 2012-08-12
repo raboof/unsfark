@@ -1,12 +1,12 @@
 /*
-Save this file as sfark.c and compile it using this command
+Save this file as unsfark.c and compile it using this command
 
-gcc -Wall -g -mfpmath=387 -o sfark sfark.c `pkg-config --cflags --libs gtk+-3.0` -lpthread -export-dynamic
+gcc -Wall -g -mfpmath=387 -o unsfark unsfark.c `pkg-config --cflags --libs gtk+-3.0` -lpthread -export-dynamic
 
 Requires libgtk-dev package.
 
 Then execute it using:
-  ./sfark
+  ./unsfark
 */
 
 #ifdef WIN32
@@ -3463,7 +3463,7 @@ static GtkWidget *	MainWindow;
 static GtkWidget *	StatusWindow;
 static GtkWidget *	ProgressWindow;
 static GtkWidget *	ButtonWindow;
-static const char	GladeName[] = "Missing sfark.glade";
+static const char	GladeName[] = "Missing unsfark.glade";
 static const char	Load[] = "sfArk file to convert to soundfont:";
 static const char	Save[] = "Name of saved soundfont file:";
 static const char	ErrorStr[] = "sfArk Error";
