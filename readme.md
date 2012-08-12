@@ -2,7 +2,7 @@
 
 ### Prerequisites 
 
-GTK and zlib. On debian, get 'libgtk-3-dev' or 'gtk-dev' and 'zlib1g-dev'.
+GTK and zlib. On debian, get 'build-essential', 'libgtk-3-dev' or 'gtk-dev' and 'zlib1g-dev'.
 
 ### Compiling 
 
