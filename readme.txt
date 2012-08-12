@@ -16,13 +16,7 @@ Anyway, being a programmer myself, I decided I had enough of sfArk, so I wrote a
 
 I don't do QT, so if you want a KDE version, you'll have to modify the source code. It should be a very simple job for any QT programmer.
 
-I also don't use a 32-bit linux. I use 64-bit on Intel CPUs. I've compiled a 64-bit version of the utility in the 'linux' folder, which should run on any modern AMD64 linux (with Gnome libraries installed). For example, I use it with Linux Mint XFCE.
-
-If you're using a 32-bit linux, you'll need to compile the source. First, you need the gnu C compiler. If using Debian, just install the package "build-essential". You also need the gnome dev package "libgtk-dev". From a command terminal, in the same folder as sfark.c, type (all on one line):
-
-gcc -mfpmath=387 -o sfark sfark.c `pkg-config --cflags --libs gtk+-3.0` -lpthread -export-dynamic
-
-This will produce the executable "sfark". Copy it somewhere along with the file "sfark.glade".
+== About the sfArk format ==
 
 Some words about the sfArk format. It really is awful, and needs to be removed from the universe. First, it breaks up a soundfont into its non-audio data, and audio data. The non-audio data is zip compressed. The audio data is compressed using one of several 16-bit delta compression schemes, depending upon which "compression level" the musician chose when he created his sfark using Melody Machine's atrocious windows utility. At the highest compression level (which is the utility's default setting, so most sfark files use it) the totally archiac LPC compression is added (in addition to the delta compression). The inept scheme this guy came up with uses integer to float conversion, float calculations, and convert float back to int. Hello, can you say "rounding errors"?? And then this bozo actually does a checksum based on those rounding errors. In effect, those errors are in the sfark file itself. Here's the horrible implication: if you don't perform the exact same rounding errors when you extract the soundfont from the sfark, THEN THE SOUNDFONT WILL BE CORRUPT. And what are the details of those rounding errors? That bozo compiled his software specifically to run on the old 80387 math coprocessor for Intel's ancient 80386 CPU (before the Pentium even). If you don't use the 80387 float format with its internal 20-bit precision, then you won't get the same rounding errors when you extract the soundfont from the sfark, AND THE SOUNDFONT WILL BE CORRUPT. If you compile my utility to use your Intel Core2 or i7's modern, fast SSE instructions, or AMD's 3dnow, etc, THEN THE SOUNDFONT WILL BE CORRUPT. Fortunately, the gnu C compiler has an option (-mfpmath=387) that says "Don't use newer floating point instructions. If the CPU supports old 80387 instructions (and the current Intel CPUs still do), use those. If the CPU doesn't, compile an entire 80387 software emulation into this program". Now I don't how well, or even if, gnu's emulation works on CPUs other than intel/AMD. For example, if it doesn't work on ARM, then if you compile my utility on an ARM CPU, it will not produce an error-free soundfont. (It will actually produce a legitimate soundfont file, despite reporting a checksum error. But the soundfont's waveforms will not be identical to the original. The sound will be altered). This is because the sfark format is technically flawed. It was written by a programmer who didn't know what he was doing, and didn't know that one doesn't use floating point calcs, with int conversions, in a supposedly lossless format. That's inept. Oh yeah, after the zip, delta, and LPC compression schemes are applied, then the resulting mess is run through a bit-packing compression scheme, a checksum is calculated and stored in a truly dreadful 300 byte header that is slapped onto the start of the sfark file. Atrocious.
 
@@ -34,6 +28,8 @@ Use my utility. Free soundfonts from the horror of sfark. And then kill the beas
 
 Someday I may tackle the stench (and more fine corporate abandon-ware) calling itself "sfpack". Fortunately, it appears that most musicians learned from the hideous mistake of sfark, and wisely eschewed sfpack. Unfortunately, there are a few sfpack files, proving that some people are too dumb to learn even from their own mistakes.
 
-Here's the link to download an archive containing the source, and 64-bit compiled exe. It's an sfark file that has been sfpack'ed. Kidding! I'm not an idiot. I used ZIP.
+== Original sources ==
+
+This github project is based on:
 
 http://home.roadrunner.com/~jgglatt/midi/software/sfark.zip
