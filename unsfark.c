@@ -10,9 +10,10 @@ Then execute it using:
 */
 
 #ifdef WIN32
-#include <windows.h>
-#include <tchar.h>
+#define HANDLE_T HANDLE
 #else
+#define HANDLE_T int
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <errno.h>
@@ -29,8 +30,13 @@ Then execute it using:
 #define ZeroMemory(x,y) memset(x, 0, y)
 #define CopyMemory(x,y,z) memcpy(x, y, z)
 #define MoveMemory(x,y,z) memmove(x, y, z)
+#define CloseHandle(fh) close(fh)
+#define INVALID_SET_FILE_POINTER -1
+#define FILE_CURRENT SEEK_CUR
+#define SetFilePointer(handle, offset, distance, method) lseek(handle, offset, method)
+#define DeleteFileA(buffer) unlink((char *)buffer)
+
 typedef char TCHAR;
-#define WINAPI
 #endif
 
 #include <zlib.h>
@@ -94,11 +100,7 @@ struct PACKITEM {
 #pragma pack ()
 
 struct SFARKINFO_V1 {
-#ifdef WIN32
-	HANDLE			PartFileHandle;
-#else
-	int				PartFileHandle;
-#endif
+	HANDLE_T		PartFileHandle;
 	unsigned char *		OutbufPtr;
 	unsigned char *		DecompBuf;
 	const char *		AppFontName;
@@ -118,13 +120,8 @@ struct SFARKINFO_V1 {
 struct SFARKINFO {
 	unsigned char *	WorkBuffer1;
 	unsigned char *	WorkBuffer2;
-#ifdef WIN32
-	HANDLE			InputFileHandle;
-	HANDLE			OutputFileHandle;
-#else
-	int				InputFileHandle;
-	int				OutputFileHandle;
-#endif
+	HANDLE_T		InputFileHandle;
+	HANDLE_T		OutputFileHandle;
 	// ==========================
 	uint32_t		FileUncompSize;			// Read from sfArk file header
 	int32_t			FileChksum;				// Read from sfArk file header
@@ -260,17 +257,10 @@ static const char UnknownErr[] = "Unknown error";
 // File I/O
 // ===============================================================
 
-#ifdef WIN32
-static void closeFile(HANDLE fh)
+static void closeFile(HANDLE_T fh)
 {
 	CloseHandle(fh);
 }
-#else
-static void closeFile(int fh)
-{
-	close(fh);
-}
-#endif
 
 
 
@@ -337,11 +327,7 @@ static int createSfFile(struct SFARKINFO * sfarkInfo, const void * name)
 
 static int setSfarkFilePos(struct SFARKINFO * sfarkInfo, long offset)
 {
-#ifdef WIN32
 	if (SetFilePointer(sfarkInfo->InputFileHandle, offset, 0, FILE_CURRENT) == INVALID_SET_FILE_POINTER)
-#else
-	if (lseek(sfarkInfo->InputFileHandle, offset, SEEK_CUR) == -1)
-#endif
 		return SFARKERR_POS;
 
 	return 0;
@@ -2191,11 +2177,7 @@ bad:	return SFARKERR_SFARKREAD;
 
 	// Read another 8192 byte block from part 2 file
 	{
-#ifdef WIN32
-	HANDLE	fileHandle;
-#else
-	int		fileHandle;
-#endif
+	HANDLE_T	fileHandle;
 
 	fileHandle = sfarkInfo->InputFileHandle;
 	sfarkInfo->InputFileHandle = sfarkInfo->u.v1.PartFileHandle;
@@ -2969,17 +2951,9 @@ static void cleanFiles(register struct SFARKINFO * sfarkInfo)
 	if (sfarkInfo->Flags & SFARK_TEMP_MADE)
 	{
 		getTempPartName(sfarkInfo, '2');
-#ifdef WIN32
 		DeleteFileA(sfarkInfo->WorkBuffer2);
-#else
-		unlink((char *)sfarkInfo->WorkBuffer2);
-#endif
 		getTempPartName(sfarkInfo, '1');
-#ifdef WIN32
 		DeleteFileA(sfarkInfo->WorkBuffer2);
-#else
-		unlink((char *)sfarkInfo->WorkBuffer2);
-#endif
 	}
 
 	sfarkInfo->Flags &= ~(SFARK_OUT_OPEN|SFARK_IN1_OPEN|SFARK_IN2_OPEN|SFARK_TEMP_MADE);
@@ -3187,22 +3161,7 @@ void * WINAPI SfarkGetBuffer(SFARKHANDLE sf)
  * RETURN: An SFARKHANDLE if success, or 0 if not enough mem.
  */
 
-#ifdef WIN32
-void * WINAPI SfarkAllocA(void);
-
-void * WINAPI SfarkAllocW(void)
-{
-	register struct SFARKINFO *	sfarkInfo;
-
-	if ((sfarkInfo = (struct SFARKINFO *)SfarkAllocA()))
-		sfarkInfo->Flags = SFARK_UNICODE;
-	return sfarkInfo;
-}
-
-void * WINAPI SfarkAllocA(void)
-#else
 void * WINAPI SfarkAlloc(void)
-#endif
 {
 	register struct SFARKINFO *	sfarkInfo;
 
@@ -3285,169 +3244,3 @@ void * WINAPI SfarkErrMsg(SFARKHANDLE sf, int code)
 
 	return (void *)str;
 }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-#ifdef WIN32
-
-static HWND			MainWindow;
-
-static const TCHAR	Extensions[] = {'s','f','A','r','k',' ','f','i','l','e','s',' ','(','*','.','s','f','a','r','k',')',0,
-								'*','.','s','f','a','r','k',0,
-								'A','l','l',' ','f','i','l','e','s',' ','(','*','.','*',')',0,
-								'*','.','*',0,0};
-
-static const TCHAR	Extensions2[] = {'s','f','2',' ','f','i','l','e','s',' ','(','*','.','s','f','2',')',0,
-								'*','.','s','f','2',0,
-								'A','l','l',' ','f','i','l','e','s',' ','(','*','.','*',')',0,
-								'*','.','*',0,0};
-
-static const TCHAR	ErrorStr[] = _T("sfArk Error");
-static const TCHAR	WindowName[] = _T("sfArk Extractor");
-static const TCHAR	Load[] = _T("sfArk file to convert to soundfont:");
-static const TCHAR	Save[] = _T("Name of saved soundfont file:");
-
-/***************** init_ofn() ******************
- * Initializes the OPENFILENAME struct.
- */
-
-static void init_ofn(OPENFILENAME *ofn, TCHAR * buffer, const TCHAR * extension)
-{
-	// Clear out fields
-	ZeroMemory(ofn, sizeof(OPENFILENAME));
-
-	// Set size
-	ofn->lStructSize = sizeof(OPENFILENAME);
-
-	// Store passed buffer for filename
-	ofn->lpstrFile = buffer;
-	ofn->nMaxFile = MAX_PATH;
-
-	// Set owner
-	ofn->hwndOwner = MainWindow;
-
-	// Set extensions
-	ofn->lpstrDefExt = ofn->lpstrFilter = extension;
-	while (*ofn->lpstrDefExt++);
-	ofn->lpstrDefExt += 2;
-}
-
-/****************** getLoadName() *****************
- * Get the user's choice of filename to load,
- * and copies it to specified buffer.
- */
-
-static TCHAR * getLoadName(TCHAR * buffer)
-{
-	OPENFILENAME ofn;
-
-	// Init OPENFILENAME
-	init_ofn(&ofn, buffer, &Extensions[0]);
-	ofn.lpstrFile[0] = 0;
-
-	// Set title
-	ofn.lpstrTitle = &Load[0];
-
-	// Set flags
-	ofn.Flags = OFN_PATHMUSTEXIST|OFN_FILEMUSTEXIST|OFN_LONGNAMES;
-
-	// Present the dialog and get user's selection
-	return (GetOpenFileName(&ofn) ? buffer : 0);
-}
-
-/****************** getSaveName() *****************
- * Get the user's choice of filename to save,
- * and copies it to specified buffer.
- */
-
-static TCHAR * getSaveName(TCHAR * buffer)
-{
-	OPENFILENAME ofn;
-
-	// Init OPENFILENAME
-	init_ofn(&ofn, buffer, &Extensions2[0]);
-
-	// Set title
-	ofn.lpstrTitle = &Save[0];
-
-	// Set flags
-	ofn.Flags = OFN_HIDEREADONLY|OFN_PATHMUSTEXIST|OFN_LONGNAMES;
-
-	// Present the dialog and get user's selection
-	return (GetOpenFileName(&ofn) ? buffer : 0);
-}
-
-int main(int argc, char * argv[])
-{
-	register char *	str;
-	SFARKHANDLE		sfark;
-
-	MainWindow = 0;
-
-	if (!(sfark = SfarkAllocA()))
-		printf("Not enough RAM!\r\n");
-	else
-	{
-		int			errCode;
-
-		errCode = 0;
-
-		if (argc > 1)
-			str = argv[1];
-		else
-			str = getLoadName(SfarkGetBuffer(sfark));
-
-		if (str && !(errCode = SfarkOpen(sfark, str)))
-		{
-			if (argc > 2)
-				str = argv[2];
-			else
-				str = getSaveName(SfarkGetBuffer(sfark));
-
-			if (str && !(errCode = SfarkBeginExtract(sfark, str)))
-			{
-				unsigned char	dots;
-
-				dots = 0;
-				do
-				{
-					if (dots != SfarkPercent(sfark))
-					{
-						printf("*");
-						++dots;
-					}
-				} while (!(errCode = SfarkExtract(sfark)));
-				if (errCode > 0) errCode = 0;
-				printf("\r\n");
-			}
-		}
-
-		str = (char *)SfarkErrMsg(sfark, errCode);
-		if (errCode)
-			MessageBoxA(MainWindow, str, &ErrorStr[0], MB_OK|MB_ICONEXCLAMATION);
-		else
-			printf("\r\n%s\n", str);
-
-		SfarkFree(sfark);
-	}
-
- 	return 0;
-}
-
-#endif
