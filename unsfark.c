@@ -1607,7 +1607,7 @@ findNewLow:			if (cnt--) break;
 						unsigned int *	ptr;
 
 						increment -= (cnt + 1);
-						ptr = &array1[lowOffset];
+						ptr = (unsigned int *)&array1[lowOffset];
 						for (;;)
 						{
 							unsigned int	wordInc;
