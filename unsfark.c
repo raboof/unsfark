@@ -176,7 +176,7 @@ struct SFARKINFO {
 
 
 
-static const unsigned char SfArkId[] = {'.','s','f','A','r','k'};
+static const char * SfArkId = ".sfArk";
 
 static const char ErrorMsgs[] = "Success\0\
 Program error\0\
@@ -198,7 +198,7 @@ Can't create soundfont file\0\
 Can't set file position\0\
 Can't read from compressed file\0";
 
-static const char UnknownErr[] = "Unknown error";
+static const char * UnknownErr = "Unknown error";
 
 
 
