@@ -1,3 +1,15 @@
+== Building ==
+
+=== Prerequisites ===
+
+GTK and zlib. On debian, get 'gtk-3-dev' or 'gtk-dev' and 'zlib1g-dev'.
+
+=== Compiling ===
+
+Run 'make'.
+
+== Background ==
+
 I was downloading some soundfont files from the internet and, to my horror, discovered that some moron(s) had compressed the files using the proprietary, totally undocumented, completely unnecessary 'sfArk' format instead of a much more sensible, useful, well-tested, established open standard such as zip. This was especially disheartening because I'm using Linux, and the misguided company (Melody Machine) that devised sfArk, had written only a windows closed-source version of their crappy sfArk decompression software. Well actually, they did once write an awful closed-source linux version, but that out-dated, abandoned version doesn't run on anything but ancient Intel CPUs running a 32-bit OS. Oh yeah, the windows version has also long been abandoned, so forget about sfArk support for Windows on something other than old Intel CPUs. One would hope that musicians have learned not to store music in proprietary, undocumented formats. Companies go out of business, leaving customers witout support, and that appears to be the case with Melody Machine... deservedly so.
 
 Anyway, being a programmer myself, I decided I had enough of sfArk, so I wrote an open-source linux utility to extract the soundfonts from sfArk files, both version 1 and 2. It uses a very basic Gnome interface that any musician should be able to handle. Click on the "Load" button, and a file dialog pops up to let you select some sfArk file. (Initially the dialog lists only those files whose names end in .sfark, but you can instead view all files by changing the button labeled 'Sfark' to 'All'). After you pick your sfark file, that dialog disappears, and another dialog appears asking you to enter the desired name for the soundfont being extracted. Initially, the dialog is filled in with the original name of the soundfont, for your convenience. After you finish with this dialog, the utility does its job. A colored bar in the window shows how it is progressing. If all goes well, text will appear at the bottom of the window, saying the soundfont is successfully extracted, and you'll find a new soundfont file on your drive. If there's a problem, a message box will pop up with an error message.

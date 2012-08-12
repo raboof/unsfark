@@ -33,7 +33,7 @@ typedef char TCHAR;
 #define WINAPI
 #endif
 
-#include "zlib/zlib.h"
+#include <zlib.h>
 
 #ifdef _MSC_VER
 #if (_MSC_VER < 1300)
