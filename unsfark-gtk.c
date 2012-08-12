@@ -8,10 +8,10 @@ static SFARKHANDLE		Sfark;
 static pthread_t		ThreadId;
 static unsigned char	StopFlag;
 
-static GtkWidget *	MainWindow;
-static GtkWidget *	StatusWindow;
-static GtkWidget *	ProgressWindow;
-static GtkWidget *	ButtonWindow;
+static GtkWindow *	MainWindow;
+static GtkStatusbar *	StatusBar;
+static GtkProgressBar *	ProgressBar;
+static GtkButton *	LoadButton;
 
 static const char	GladeName[] = "Missing unsfark.glade";
 static const char	Load[] = "sfArk file to convert to soundfont:";
@@ -29,7 +29,7 @@ static char * getLoadName(char * buffer)
 	char *				filename;
 	GtkFileFilter *	filter;
 
-	dialog = gtk_file_chooser_dialog_new(&Load[0], GTK_WINDOW(MainWindow), GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
+	dialog = gtk_file_chooser_dialog_new(&Load[0], MainWindow, GTK_FILE_CHOOSER_ACTION_OPEN, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_OPEN, GTK_RESPONSE_ACCEPT, NULL);
 
 	filter = gtk_file_filter_new();
 	gtk_file_filter_set_name(filter, "sfark");
@@ -67,7 +67,7 @@ static char * getSaveName(char * buffer)
 	GtkWidget *dialog;
 	char *	filename;
 
-	dialog = gtk_file_chooser_dialog_new(&Save[0], GTK_WINDOW(MainWindow), GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
+	dialog = gtk_file_chooser_dialog_new(&Save[0], MainWindow, GTK_FILE_CHOOSER_ACTION_SAVE, GTK_STOCK_CANCEL, GTK_RESPONSE_CANCEL, GTK_STOCK_SAVE, GTK_RESPONSE_ACCEPT, NULL);
 	gtk_file_chooser_set_do_overwrite_confirmation(GTK_FILE_CHOOSER(dialog), TRUE);
 
 	gtk_file_chooser_set_current_name(GTK_FILE_CHOOSER(dialog), buffer);
@@ -93,10 +93,10 @@ static void display_error(const char * msg)
 {
 	GtkWidget *dialog;
 
-	dialog = gtk_message_dialog_new(MainWindow ? GTK_WINDOW(MainWindow) : 0, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, msg);
+	dialog = gtk_message_dialog_new(MainWindow, GTK_DIALOG_DESTROY_WITH_PARENT, GTK_MESSAGE_ERROR, GTK_BUTTONS_CLOSE, msg);
 	gtk_dialog_run(GTK_DIALOG(dialog));
 	gtk_widget_destroy(dialog);
-	gtk_statusbar_push(GTK_STATUSBAR(StatusWindow), 0, ErrorStr);
+	gtk_statusbar_push(StatusBar, 0, ErrorStr);
 }
 
 /*********************** get_exe_path() **********************
@@ -148,10 +148,10 @@ static void create_window(void)
 	MainWindow = 0;
 	if (gtk_builder_add_from_file(builder, &fn[0], NULL))
 	{
-		MainWindow = GTK_WIDGET(gtk_builder_get_object(builder, "MainWindow"));
-		StatusWindow = GTK_WIDGET(gtk_builder_get_object(builder, "statusbar"));
-		ProgressWindow = GTK_WIDGET(gtk_builder_get_object(builder, "progressbar"));
-		ButtonWindow = GTK_WIDGET(gtk_builder_get_object(builder, "load"));
+		MainWindow = GTK_WINDOW(gtk_builder_get_object(builder, "MainWindow"));
+		StatusBar = GTK_STATUSBAR(gtk_builder_get_object(builder, "statusbar"));
+		ProgressBar = GTK_PROGRESS_BAR(gtk_builder_get_object(builder, "progressbar"));
+		LoadButton = GTK_BUTTON(gtk_builder_get_object(builder, "load"));
 		gtk_builder_connect_signals(builder, NULL);
 	}
 
@@ -160,7 +160,7 @@ static void create_window(void)
 
 gboolean update_percent(unsigned int percent)
 {
-	gtk_progress_bar_set_fraction((struct GtkProgressBar *)ProgressWindow, (gdouble)percent / 10);
+	gtk_progress_bar_set_fraction(ProgressBar, (gdouble)percent / 10);
 	return 0;
 } 
 
@@ -169,10 +169,10 @@ gboolean update_done(int errCode)
 	if (errCode < 0)
 		display_error(SfarkErrMsg(Sfark, errCode));
 	else if (errCode == 1)
-		gtk_statusbar_push(GTK_STATUSBAR(StatusWindow), 0, "Successfully extracted soundfont.");
+		gtk_statusbar_push(StatusBar, 0, "Successfully extracted soundfont.");
 	else
-		gtk_statusbar_push(GTK_STATUSBAR(StatusWindow), 0, "Aborted.");
-	gtk_button_set_label(GTK_BUTTON(ButtonWindow), "Load");
+		gtk_statusbar_push(StatusBar, 0, "Aborted.");
+	gtk_button_set_label(LoadButton, "Load");
 
 	return 0;
 } 
@@ -209,14 +209,14 @@ G_MODULE_EXPORT void do_load(GtkWidget *widget, gpointer data)
 	// If thread is running, just tell it to abort
 	if (ThreadId)
 	{
-		gtk_statusbar_push(GTK_STATUSBAR(StatusWindow), 0, "Aborting...");
+		gtk_statusbar_push(StatusBar, 0, "Aborting...");
 		StopFlag = 1;
 		pthread_join(ThreadId, NULL);
 	}
 	else
 	{
 		errCode = 0;
-		gtk_progress_bar_set_fraction((struct GtkProgressBar *)ProgressWindow, 0);
+		gtk_progress_bar_set_fraction(ProgressBar, 0);
 
 		// Let user pick the sfark file
 		str = getLoadName(SfarkGetBuffer(Sfark));
@@ -236,8 +236,8 @@ G_MODULE_EXPORT void do_load(GtkWidget *widget, gpointer data)
 				}
 				else
 				{
-					gtk_statusbar_push(GTK_STATUSBAR(StatusWindow), 0, "Extracting the soundfont...");
-					gtk_button_set_label(GTK_BUTTON(ButtonWindow), "Abort");
+					gtk_statusbar_push(StatusBar, 0, "Extracting the soundfont...");
+					gtk_button_set_label(LoadButton, "Abort");
 				}
 			}
 		}
@@ -262,7 +262,7 @@ int main(int argc, char *argv[])
 	create_window();
 	if (MainWindow)
 	{
-		gtk_widget_show(MainWindow);
+		gtk_widget_show(GTK_WIDGET(MainWindow));
 
 		if (!(Sfark = SfarkAlloc()))
 			display_error("Not enough RAM!");
