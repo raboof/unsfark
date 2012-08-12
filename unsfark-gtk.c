@@ -180,7 +180,7 @@ gboolean update_done(int errCode)
 void * extract_thread(void * args)
 {
 	int				errCode;
-	unsigned char	percent;
+	unsigned int	percent;
 
 	errCode = 0;
 	percent = 0;
