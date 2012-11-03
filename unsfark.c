@@ -2340,7 +2340,7 @@ hdr:		result = SFARKERR_BADHDR;
 		if ((unsigned int)result != slop) goto hdr;
 
 		// The Lspack entry we want has a filename that ends in ".sfArk$1" or ".sfArk$2"
-		if (headerSize > 8 && !memcmp(&fileHdrStartPtr[headerSize + 100 - 8], &SfArkId[0], sizeof(SfArkId)))
+		if (headerSize > 8 && !memcmp(&fileHdrStartPtr[headerSize + 100 - 8], SfArkId, strlen(SfArkId)))
 		{
 			sfarkInfo->FileUncompSize = get_ulong(fileHdrStartPtr + 22);
 			sfarkInfo->FileChksum = get_ulong(fileHdrStartPtr + 14);
@@ -2830,7 +2830,7 @@ bad:			return result;
 		}
 
 		// Is the ID where we expect it?
-		if (!memcmp(fileHdrStartPtr + 26, &SfArkId[1], sizeof(SfArkId) - 1))
+		if (!memcmp(fileHdrStartPtr + 26, SfArkId+1, strlen(SfArkId+1)))
 		{
 			// Move header to buffer start so it's DWORD aligned. Some CPUs need this, if we access a DWORD field
 			if (fileHdrStartPtr != sfarkInfo->WorkBuffer1)
