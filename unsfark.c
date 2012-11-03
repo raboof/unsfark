@@ -2885,7 +2885,7 @@ bad:			return result;
 					MoveMemory(fileHdrStartPtr + 42, fileHdrStartPtr + 40, headerSize);
 
 					// The Lspack entry we want has a filename that ends in ".sfArk$1" or ".sfArk$2"
-					if (headerSize > 8 && !memcmp(&fileHdrStartPtr[headerSize + 42 - 8], &SfArkId[0], sizeof(SfArkId)))
+					if (headerSize > 8 && !memcmp(&fileHdrStartPtr[headerSize + 42 - 8], SfArkId, strlen(SfArkId)))
 					{
 						fileHdrStartPtr[0] = fileHdrStartPtr[headerSize + 42 - 1];	// save whether part 1 or 2
 						headerSize -= 8;
