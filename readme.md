@@ -1,3 +1,9 @@
+## Deprecation warning
+
+WARNING: as far as I'm concerned, this project is deprecated.
+
+Use https://github.com/raboof/sfArkXTm instead.
+
 ## Building 
 
 ### Prerequisites 
